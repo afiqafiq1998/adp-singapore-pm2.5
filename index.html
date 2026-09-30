@@ -310,6 +310,27 @@ h1 {
 
 
 /* ==========================================
+   PM2.5 BAND RANGE
+   ========================================== */
+
+.pm25-range {
+
+    margin-top: 15px;
+
+    font-size: clamp(
+        18px,
+        1.8vw,
+        28px
+    );
+
+    font-weight: 600;
+
+    color: var(--text-muted);
+
+}
+
+
+/* ==========================================
    INFORMATION ROW
    ========================================== */
 
@@ -541,6 +562,18 @@ h1 {
     </div>
 
 
+    <!-- BAND RANGE -->
+
+    <div
+        id="range-north"
+        class="pm25-range"
+    >
+
+        Band --: -- µg/m³
+
+    </div>
+
+
 </div>
 
 
@@ -638,72 +671,120 @@ let nextRefreshTime =
 
 
 /* ==========================================
-   STATUS CLASSIFICATION
+   STATUS + BAND
    ========================================== */
 
 function getStatus(value) {
 
 
+    /*
+     * BAND 1
+     * 0–55
+     */
+
     if (value <= 55) {
 
         return {
 
-            text: "NORMAL",
+            text:
+                "NORMAL",
 
             numberClass:
                 "psi-good",
 
             badgeClass:
-                "status-good"
+                "status-good",
+
+            band:
+                "Band 1",
+
+            range:
+                "0–55 µg/m³"
 
         };
 
     }
 
+
+    /*
+     * BAND 2
+     * 56–150
+     */
 
     if (value <= 150) {
 
         return {
 
-            text: "ELEVATED",
+            text:
+                "ELEVATED",
 
             numberClass:
                 "psi-moderate",
 
             badgeClass:
-                "status-moderate"
+                "status-moderate",
+
+            band:
+                "Band 2",
+
+            range:
+                "56–150 µg/m³"
 
         };
 
     }
 
+
+    /*
+     * BAND 3
+     * 151–250
+     */
 
     if (value <= 250) {
 
         return {
 
-            text: "HIGH",
+            text:
+                "HIGH",
 
             numberClass:
                 "psi-unhealthy",
 
             badgeClass:
-                "status-unhealthy"
+                "status-unhealthy",
+
+            band:
+                "Band 3",
+
+            range:
+                "151–250 µg/m³"
 
         };
 
     }
 
 
+    /*
+     * BAND 4
+     * Above 250
+     */
+
     return {
 
-        text: "VERY HIGH",
+        text:
+            "VERY HIGH",
 
         numberClass:
             "psi-very-unhealthy",
 
         badgeClass:
-            "status-very-unhealthy"
+            "status-very-unhealthy",
+
+        band:
+            "Band 4",
+
+        range:
+            ">250 µg/m³"
 
     };
 
@@ -823,6 +904,12 @@ async function fetchNorthPM25() {
         );
 
 
+    const rangeDisplay =
+        document.getElementById(
+            "range-north"
+        );
+
+
     const timestampDisplay =
         document.getElementById(
             "update-timestamp"
@@ -844,8 +931,7 @@ async function fetchNorthPM25() {
 
 
         /*
-         * Add timestamp to prevent
-         * browser caching.
+         * Timestamp prevents browser caching.
          */
 
         const response =
@@ -854,9 +940,13 @@ async function fetchNorthPM25() {
                 "?t=" +
                 Date.now(),
                 {
-                    method: "GET",
 
-                    cache: "no-store"
+                    method:
+                        "GET",
+
+                    cache:
+                        "no-store"
+
                 }
             );
 
@@ -882,9 +972,8 @@ async function fetchNorthPM25() {
 
 
         /*
-         * ======================================
-         * GET LATEST ITEM
-         * ======================================
+         * Find the latest item
+         * containing North data.
          */
 
         const item =
@@ -896,8 +985,8 @@ async function fetchNorthPM25() {
                         item
                             ?.readings
                             ?.pm25_one_hourly
-                            ?.north !==
-                        undefined
+                            ?.north
+                            !== undefined
                 );
 
 
@@ -911,9 +1000,7 @@ async function fetchNorthPM25() {
 
 
         /*
-         * ======================================
-         * GET NORTH VALUE
-         * ======================================
+         * Get North reading.
          */
 
         const northValue =
@@ -944,11 +1031,9 @@ async function fetchNorthPM25() {
         );
 
 
-        /*
-         * ======================================
-         * DISPLAY NUMBER
-         * ======================================
-         */
+        /* ==================================
+           DISPLAY NUMBER
+           ================================== */
 
         valueDisplay.textContent =
             Math.round(
@@ -965,11 +1050,9 @@ async function fetchNorthPM25() {
         );
 
 
-        /*
-         * ======================================
-         * STATUS
-         * ======================================
-         */
+        /* ==================================
+           GET STATUS / BAND
+           ================================== */
 
         const status =
             getStatus(
@@ -977,10 +1060,18 @@ async function fetchNorthPM25() {
             );
 
 
+        /* ==================================
+           NUMBER COLOUR
+           ================================== */
+
         valueDisplay.classList.add(
             status.numberClass
         );
 
+
+        /* ==================================
+           STATUS BADGE
+           ================================== */
 
         badgeDisplay.textContent =
             status.text;
@@ -991,11 +1082,19 @@ async function fetchNorthPM25() {
             status.badgeClass;
 
 
-        /*
-         * ======================================
-         * NEA UPDATE TIMESTAMP
-         * ======================================
-         */
+        /* ==================================
+           BAND RANGE
+           ================================== */
+
+        rangeDisplay.textContent =
+            status.band +
+            ": " +
+            status.range;
+
+
+        /* ==================================
+           NEA UPDATE TIME
+           ================================== */
 
         const updatedTimestamp =
             item.updatedTimestamp ||
@@ -1041,19 +1140,17 @@ async function fetchNorthPM25() {
         }
 
 
-        /*
-         * ======================================
-         * SUCCESS
-         * ======================================
-         */
+        /* ==================================
+           SUCCESS
+           ================================== */
 
         errorBanner.style.display =
             "none";
 
 
         /*
-         * Restart the 30-minute
-         * countdown.
+         * Restart 30-minute countdown
+         * after successful update.
          */
 
         nextRefreshTime =
@@ -1077,8 +1174,9 @@ async function fetchNorthPM25() {
 
 
         /*
-         * Do NOT replace an existing
-         * valid PM2.5 reading.
+         * Keep the previous valid
+         * PM2.5 reading if the API
+         * temporarily fails.
          */
 
         errorBanner.textContent =
@@ -1095,7 +1193,7 @@ async function fetchNorthPM25() {
 
 
 /* ==========================================
-   START EVERYTHING
+   INITIAL START
    ========================================== */
 
 updateClock();
@@ -1107,7 +1205,7 @@ fetchNorthPM25();
 
 
 /* ==========================================
-   CLOCK — EVERY SECOND
+   CLOCK
    ========================================== */
 
 setInterval(
@@ -1118,7 +1216,7 @@ setInterval(
 
 
 /* ==========================================
-   COUNTDOWN — EVERY SECOND
+   COUNTDOWN
    ========================================== */
 
 setInterval(
@@ -1129,7 +1227,7 @@ setInterval(
 
 
 /* ==========================================
-   PM2.5 — EVERY 30 MINUTES
+   PM2.5 REFRESH
    ========================================== */
 
 setInterval(
@@ -1144,3 +1242,4 @@ setInterval(
 </body>
 
 </html>
+
